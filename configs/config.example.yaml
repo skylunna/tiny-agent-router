@@ -1,0 +1,21 @@
+# Agent Router 示例配置
+server:
+  port: 8080
+
+routes:
+  - name: default
+    models:
+      - name: gpt-4o
+        api_key: "sk-xxx"
+        base_url: "https://api.openai.com/v1"
+        weight: 70
+      - name: claude-3.5-sonnet
+        api_key: "sk-xxx"
+        base_url: "https://api.anthropic.com/v1"
+        weight: 30
+    fallback_on:
+      - 429
+      - 500
+      - 502
+      - timeout
+    timeout: 30s
