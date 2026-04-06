@@ -32,7 +32,6 @@ func main() {
 	// 健康检查
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
 		if _, err := w.Write([]byte("OK")); err != nil {
 			slog.Warn("Failed to write health response", "error", err)
 		}
