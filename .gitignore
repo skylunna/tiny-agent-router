@@ -21,6 +21,8 @@ vendor/
 
 # Env & Config
 .env
+*.env.local
+*.env.production
 configs/config.yaml
 
 # Build artifacts

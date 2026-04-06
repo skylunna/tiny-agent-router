@@ -7,24 +7,41 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/joho/godotenv"
+	"github.com/skylunna/tiny-agent-router/internal/proxy"
 )
 
 func main() {
 	slog.Info("🚀 Tiny Agent Router starting...")
 
-	// 基础健康检查接口
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	// 1. 尝试加载 .env 文件（本地开发友好）
+	if err := godotenv.Load(); err != nil {
+		slog.Debug(".env file not found, falling back to system env vars")
+	}
+
+	// Step 1 阶段: 使用环境变量快速切换上游, Step 2 将改为读取 config.yaml
+	upstreamURL := os.Getenv("UPSTREAM_BASE_URL")
+	if upstreamURL == "" {
+		upstreamURL = "https://api.openai.com/v1" // 默认值
+	}
+	upstreamKey := os.Getenv("UPSTREAM_API_KEY")
+	mux := http.NewServeMux()
+
+	// 健康检查
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	// TODO 后续接入 internal/proxy 实现 v1/chat/completions 路由
-	addr := ":8080"
-	slog.Info("Server listening", "addr", addr)
+	// 挂载代理: 拦截所有 /v1/ 开头的请求
+	mux.Handle("/v1/", proxy.NewHandler(upstreamURL, upstreamKey))
 
-	server := &http.Server{Addr: addr}
+	addr := ":7722"
+	slog.Info("Server listening", "addr", addr, "upstream", upstreamURL)
 
-	// 优雅关闭
+	server := &http.Server{Addr: addr, Handler: mux}
+
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
