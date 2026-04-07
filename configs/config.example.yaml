@@ -23,3 +23,27 @@ fallback:
   max_retries: 2          # 单请求最多重试次数
   retry_delay: 500ms      # 重试间隔
   fallback_order: ["qwen2.5-ollama", "gpt-4o-backup"]  # 备选顺序
+
+
+pricing:
+  gpt-4o:
+    input: 0.005
+    output: 0.015
+  gpt-4o-mini:
+    input: 0.00015
+    output: 0.0006
+  claude-3-5-sonnet:
+    input: 0.003
+    output: 0.015
+  qwen2.5-ollama:  # 本地模型，成本设为 0 或自定义
+    input: 0
+    output: 0
+  default:  # 未匹配模型时的兜底价格
+    input: 0.001
+    output: 0.003
+
+# 新增：可观测性配置
+observability:
+  enable_metrics: true
+  prometheus_path: "/metrics"  # Prometheus 抓取端点
+  service_name: "tiny-agent-router"

@@ -10,11 +10,13 @@ import (
 )
 
 type UpstreamInfo struct {
-	Name    string
-	BaseURL string
-	APIKey  string
-	Timeout time.Duration
-	RetryOn map[int]bool
+	Name         string
+	BaseURL      string
+	APIKey       string
+	Timeout      time.Duration
+	RetryOn      map[int]bool
+	DefaultModel string         // 模型映射
+	Pricing      config.Pricing // 成本配置
 }
 
 type Router struct {
@@ -36,11 +38,13 @@ func NewRouter(cfg *config.Config) *Router {
 			continue
 		}
 		r.upstreams = append(r.upstreams, UpstreamInfo{
-			Name:    u.Name,
-			BaseURL: u.BaseURL,
-			APIKey:  resolveAPIKey(u.APIKey),
-			Timeout: u.Timeout,
-			RetryOn: sliceToSet(u.RetryOn),
+			Name:         u.Name,
+			BaseURL:      u.BaseURL,
+			APIKey:       resolveAPIKey(u.APIKey),
+			Timeout:      u.Timeout,
+			RetryOn:      sliceToSet(u.RetryOn),
+			DefaultModel: u.DefaultModel,
+			Pricing:      u.Pricing,
 		})
 		r.weights = append(r.weights, u.Weight)
 		r.totalWeight += u.Weight
