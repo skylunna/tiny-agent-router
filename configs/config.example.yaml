@@ -1,21 +1,25 @@
-# Agent Router 示例配置
+# tiny-agent-router 配置示例
 server:
-  port: 8080
+  port: 7722  # 优先使用 .env 的 PORT，此处为默认值
 
-routes:
-  - name: default
-    models:
-      - name: gpt-4o
-        api_key: "sk-xxx"
-        base_url: "https://api.openai.com/v1"
-        weight: 70
-      - name: claude-3.5-sonnet
-        api_key: "sk-xxx"
-        base_url: "https://api.anthropic.com/v1"
-        weight: 30
-    fallback_on:
-      - 429
-      - 500
-      - 502
-      - timeout
+# 上游模型池（支持任意 OpenAI 兼容接口：OpenAI/Claude/Ollama/DeepSeek...）
+upstreams:
+  - name: qwen2.5-ollama
+    base_url: "http://127.0.0.1:11434/v1"
+    api_key: ""  # Ollama 可留空
+    weight: 70   # 权重（相对值，70% 流量）
     timeout: 30s
+    retry_on: [429, 500, 502, 503, 504]  # 触发降级的状态码
+
+  - name: gpt-4o-backup
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"  # 支持 ${ENV} 变量替换
+    weight: 30
+    timeout: 20s
+    retry_on: [429, 500]
+
+# 全局降级策略
+fallback:
+  max_retries: 2          # 单请求最多重试次数
+  retry_delay: 500ms      # 重试间隔
+  fallback_order: ["qwen2.5-ollama", "gpt-4o-backup"]  # 备选顺序
