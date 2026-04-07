@@ -46,8 +46,6 @@ func NewRouter(cfg *config.Config) *Router {
 		r.totalWeight += u.Weight
 	}
 
-	// 初始化随机种子
-	rand.Seed(time.Now().UnixNano())
 	return r
 }
 
