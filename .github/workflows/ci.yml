@@ -27,14 +27,14 @@ jobs:
           install-mode: "module"
 
   rust-check:
-    name: Rust Lint & Build (1.93.0-nightly)
+    name: Rust Lint & Build (1.93.0)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.93.0-nightly"
+          toolchain: "1.93.0"
           components: clippy, rustfmt, rust-src, llvm-tools
           targets: x86_64-unknown-linux-musl
       
