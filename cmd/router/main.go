@@ -120,9 +120,10 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Forced shutdown", "error", err)
-		cancel()	// 显示释放资源
+		cancel() // 显示释放资源
 		os.Exit(1)
 	}
 
+	cancel()
 	slog.Info("✅ Server stopped gracefully")
 }
