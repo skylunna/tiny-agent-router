@@ -69,7 +69,9 @@ func main() {
 	// 健康检查（K8s/负载均衡用）
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			slog.Debug("Health check write failed", "error", err)
+		}
 	})
 
 	// 挂载指标端点
@@ -118,18 +120,9 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Forced shutdown", "error", err)
+		cancel()	// 显示释放资源
 		os.Exit(1)
 	}
 
 	slog.Info("✅ Server stopped gracefully")
-}
-
-// hasPricing 检查是否有上游配置了计价规则
-func hasPricing(upstreams []config.Upstream) bool {
-	for _, u := range upstreams {
-		if u.Pricing.Prompt > 0 || u.Pricing.Completion > 0 {
-			return true
-		}
-	}
-	return false
 }
