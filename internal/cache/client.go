@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/skylunna/tiny-agent-router/internal/cache/proto"
@@ -17,34 +18,50 @@ type Client struct {
 }
 
 func NewClient(addr string) (*Client, error) {
-	// 带超时和重试的连接
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(), // 启动时确保连接成功
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.Info("🔗 Connected to semantic-cache", "addr", addr)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 轮询连接状态，最多等待 5 秒
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if conn.GetState() == connectivity.Ready {
+			slog.Info("🔗 semantic-cache connection ready", "addr", addr)
+			break
+		}
+		if !conn.WaitForStateChange(ctx, conn.GetState()) {
+			break // 上下文取消
+		}
+	}
+
+	// 最终检查
+	if conn.GetState() != connectivity.Ready {
+		slog.Warn("⚠️ semantic-cache connection not ready, will retry on first call",
+			"addr", addr, "state", conn.GetState())
+	}
+
 	return &Client{
 		conn:   conn,
 		client: proto.NewSemanticCacheClient(conn),
 	}, nil
 }
 
-// Get 查询缓存（带超时，失败自动 bypass）
+// Get 查询缓存
 func (c *Client) Get(ctx context.Context, req *proto.CacheRequest) (*proto.CacheResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond) // 缓存查询必须快
+	// 缓存查询 200ms 超时
+	ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 	defer cancel()
 
 	resp, err := c.client.Get(ctx, req)
 	if err != nil {
 		slog.Debug("Cache GET failed, bypassing", "error", err)
-		return nil, nil // 返回 nil 表示 bypass，不影响主流程
+		return nil, nil
 	}
 
 	if resp.Hit {
@@ -57,7 +74,6 @@ func (c *Client) Get(ctx context.Context, req *proto.CacheRequest) (*proto.Cache
 
 // Put 异步写入缓存（不阻塞主请求）
 func (c *Client) Put(ctx context.Context, req *proto.CacheRequest) {
-	// 后台协程发送，即使失败也不影响主流程
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()

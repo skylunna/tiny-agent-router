@@ -14,13 +14,10 @@ struct CacheService;
 
 #[tonic::async_trait]
 impl SemanticCache for CacheService {
-    async fn get(
-        &self,
-        request: Request<CacheRequest>,
-    ) -> Result<Response<CacheResponse>, Status> {
+    async fn get(&self, request: Request<CacheRequest>) -> Result<Response<CacheResponse>, Status> {
         let req = request.into_inner();
         tracing::info!("Cache GET request: id={}", req.request_id);
-        
+
         // Step 4.1 MVP: 始终返回未命中，但记录日志
         // Step 4.2 将实现：embedding 相似度 + SQLite 查询
         Ok(Response::new(CacheResponse {
@@ -31,20 +28,14 @@ impl SemanticCache for CacheService {
         }))
     }
 
-    async fn put(
-        &self,
-        request: Request<CacheRequest>,
-    ) -> Result<Response<Empty>, Status> {
+    async fn put(&self, request: Request<CacheRequest>) -> Result<Response<Empty>, Status> {
         let req = request.into_inner();
         tracing::info!("Cache PUT request: id={}", req.request_id);
         // MVP: 直接返回成功，异步逻辑后续实现
         Ok(Response::new(Empty {}))
     }
 
-    async fn health(
-        &self,
-        _request: Request<Empty>,
-    ) -> Result<Response<HealthResponse>, Status> {
+    async fn health(&self, _request: Request<Empty>) -> Result<Response<HealthResponse>, Status> {
         Ok(Response::new(HealthResponse { serving: true }))
     }
 }
@@ -53,16 +44,16 @@ impl SemanticCache for CacheService {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志
     tracing_subscriber::fmt::init();
-    
+
     let addr = "[::1]:50051".parse().unwrap();
     let service = CacheService::default();
-    
+
     tracing::info!("🦀 semantic-cache server listening on {}", addr);
-    
+
     Server::builder()
         .add_service(SemanticCacheServer::new(service))
         .serve(addr)
         .await?;
-    
+
     Ok(())
 }
