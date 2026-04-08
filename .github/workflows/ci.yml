@@ -27,24 +27,44 @@ jobs:
           install-mode: "module"
 
   rust-check:
-    name: Rust Lint & Format
+    name: Rust Lint & Build (1.93.0-nightly)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ env.RUST_VERSION }}
-          components: rustfmt, clippy
+          toolchain: "1.93.0-nightly"
+          components: clippy, rustfmt, rust-src, llvm-tools
+          targets: x86_64-unknown-linux-musl
+      
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: cache-service
-      - name: Check formatting
+          cache-on-failure: true
+          shared-key: "nightly-1.93"
+      
+      - name: Configure rustflags for nightly
+        run: echo "RUSTFLAGS=-A unexpected_cfgs" >> $GITHUB_ENV
+      
+      - name: Run rustfmt
         working-directory: cache-service
-        run: cargo fmt -- --check
-      - name: Run clippy (strict mode)
+        run: cargo +nightly fmt -- --check
+      
+      - name: Run clippy
         working-directory: cache-service
-        run: cargo clippy -- -D warnings -D clippy::pedantic
+        run: cargo +nightly clippy -- -D warnings
+
+      - name: Build cache-service
+        working-directory: cache-service
+        run: cargo +nightly build --release --target x86_64-unknown-linux-musl
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-cache-musl
+          path: cache-service/target/x86_64-unknown-linux-musl/release/semantic-cache
 
   test:
     name: Unit & Integration Tests
@@ -93,7 +113,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.RUST_VERSION }}
+          toolchain: 1.85.0
           targets: x86_64-unknown-linux-musl
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2

@@ -1,28 +1,42 @@
-# cache-service/Cargo.toml
 [package]
 name = "semantic-cache"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+
+[features]
+default = []
+nightly-optimizations = []
 
 [dependencies]
 # gRPC
-tonic = "0.11"
-prost = "0.12"
-tokio = { version = "1", features = ["full"] }
-getrandom = ">=0.2, <0.4"
+tonic = { version = "0.12", features = ["tls"] }
+prost = "0.13"
+tokio = { version = "1.43", features = ["full", "tracing"] }
 
 # 向量计算
-ndarray = "0.15"
+ndarray = "0.16"
 num-traits = "0.2"
+# 启用 nightly 特性获得更快 cosine 计算
+# ndarray = { version = "0.16", features = ["nightly"] }
 
-# 存储（默认 SQLite，轻量）
-rusqlite = { version = "0.31", features = ["bundled"] }
+# 存储
+rusqlite = { version = "0.32", features = ["bundled", "modern_sqlite"] }
 
 # 工具
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# 显式约束，避免传递依赖冲突
+getrandom = "0.4"
+rand = "0.9"
 
 [build-dependencies]
-tonic-build = "0.11"
+tonic-build = "0.12"
+
+# nightly 专属优化
+# [profile.release]
+# codegen-units = 1
+# lto = "fat"
+# panic = "abort"

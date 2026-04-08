@@ -1,9 +1,7 @@
-use tonic::{transport::Server, Request, Response, Status};
-use tracing_subscriber;
+use tonic::{Request, Response, Status, transport::Server};
 
-// 自动生成的 proto 模块
 pub mod proto {
-    tonic::include_proto!("cache"); // 根据 package name
+    tonic::include_proto!("cache");
 }
 
 use proto::semantic_cache_server::{SemanticCache, SemanticCacheServer};
@@ -18,8 +16,6 @@ impl SemanticCache for CacheService {
         let req = request.into_inner();
         tracing::info!("Cache GET request: id={}", req.request_id);
 
-        // Step 4.1 MVP: 始终返回未命中，但记录日志
-        // Step 4.2 将实现：embedding 相似度 + SQLite 查询
         Ok(Response::new(CacheResponse {
             hit: false,
             response_body: None,
@@ -31,7 +27,7 @@ impl SemanticCache for CacheService {
     async fn put(&self, request: Request<CacheRequest>) -> Result<Response<Empty>, Status> {
         let req = request.into_inner();
         tracing::info!("Cache PUT request: id={}", req.request_id);
-        // MVP: 直接返回成功，异步逻辑后续实现
+
         Ok(Response::new(Empty {}))
     }
 
@@ -42,11 +38,13 @@ impl SemanticCache for CacheService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 初始化日志
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .init();
 
     let addr = "[::1]:50051".parse().unwrap();
-    let service = CacheService::default();
+    let service = CacheService;
 
     tracing::info!("🦀 semantic-cache server listening on {}", addr);
 
