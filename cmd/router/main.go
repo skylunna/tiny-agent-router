@@ -12,6 +12,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"github.com/skylunna/tiny-agent-router/internal/cache"
 	"github.com/skylunna/tiny-agent-router/internal/config"
 	"github.com/skylunna/tiny-agent-router/internal/metrics"
 	"github.com/skylunna/tiny-agent-router/internal/proxy"
@@ -43,7 +44,7 @@ func main() {
 	// 4. 初始化成本追踪器（可选）
 	var costTracker *metrics.CostTracker
 	if cfg.HasPricing() {
-		costTracker, err = metrics.NewCostTracker(cfg.Pricing) // 传 cfg.Pricing
+		costTracker, err = metrics.NewCostTracker(cfg.Pricing)
 		if err != nil {
 			slog.Warn("Cost tracking disabled", "error", err)
 		} else {
@@ -51,10 +52,24 @@ func main() {
 		}
 	}
 
-	// 5. 初始化路由策略
+	// 5. 【新增】初始化语义缓存客户端（Step 4）
+	var cacheClient *cache.Client
+	if cfg.Cache.Enabled && cfg.Cache.GrpcAddr != "" {
+		slog.Info("🔄 Initializing semantic cache client...", "addr", cfg.Cache.GrpcAddr)
+
+		cacheClient, err = cache.NewClient(cfg.Cache.GrpcAddr)
+		if err != nil {
+			slog.Warn("⚠️ Failed to connect to semantic-cache, running without cache", "error", err)
+			cacheClient = nil // 降级：无缓存模式继续运行
+		} else {
+			slog.Info("🔗 Connected to semantic-cache", "addr", cfg.Cache.GrpcAddr)
+		}
+	}
+
+	// 6. 初始化路由策略
 	r := router.NewRouter(cfg)
 
-	// 6. 初始化可观测性（Prometheus）
+	// 7. 初始化可观测性（Prometheus）
 	var metricsHandler http.Handler
 	if cfg.Observability.EnableMetrics {
 		metricsHandler = metrics.InitPrometheus()
@@ -63,7 +78,7 @@ func main() {
 		}
 	}
 
-	// 7. 构建 HTTP 服务
+	// 8. 构建 HTTP 服务
 	mux := http.NewServeMux()
 
 	// 健康检查（K8s/负载均衡用）
@@ -79,11 +94,11 @@ func main() {
 		mux.Handle(cfg.Observability.PrometheusPath, metricsHandler)
 	}
 
-	// 挂载核心代理（/v1/* 路由）
-	proxyHandler := proxy.NewHandler(r, costTracker)
+	// 挂载核心代理（/v1/* 路由）- 传入 cacheClient
+	proxyHandler := proxy.NewHandler(r, costTracker, cacheClient)
 	mux.Handle("/v1/", proxyHandler)
 
-	// 8. 确定监听端口（优先级：.env PORT > config.yaml > 默认 7722）
+	// 9. 确定监听端口（优先级：.env PORT > config.yaml > 默认 7722）
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = fmt.Sprintf(":%d", cfg.Server.Port)
@@ -100,7 +115,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// 9. 启动服务（阻塞）
+	// 10. 启动服务（阻塞）
 	go func() {
 		slog.Info("Server listening", "addr", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -108,7 +123,7 @@ func main() {
 		}
 	}()
 
-	// 10. 优雅关闭（SIGINT/SIGTERM）
+	// 11. 优雅关闭（SIGINT/SIGTERM）
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
@@ -117,9 +132,17 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// ✅ 修复：原代码此处有笔误
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Forced shutdown", "error", err)
-		return
+	}
+
+	// 【新增】关闭缓存客户端连接
+	if cacheClient != nil {
+		slog.Info("🔌 Closing semantic-cache connection...")
+		if err := cacheClient.Close(); err != nil {
+			slog.Warn("Failed to close cache client", "error", err)
+		}
 	}
 
 	slog.Info("✅ Server stopped gracefully")

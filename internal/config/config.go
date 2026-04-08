@@ -17,6 +17,7 @@ type Config struct {
 	Fallback      FallbackConfig      `yaml:"fallback"`
 	Pricing       map[string]Pricing  `yaml:"pricing"`       // 全局 pricing，按 upstream name 映射
 	Observability ObservabilityConfig `yaml:"observability"` // 改为 Observability
+	Cache         CacheConfig         `yaml:"cache"`
 }
 
 type Upstream struct {
@@ -45,6 +46,13 @@ type ObservabilityConfig struct {
 	EnableMetrics  bool   `yaml:"enable_metrics"`
 	PrometheusPath string `yaml:"prometheus_path"`
 	ServiceName    string `yaml:"service_name"`
+}
+
+type CacheConfig struct {
+	Enabled             bool    `yaml:"enabled"`
+	GrpcAddr            string  `yaml:"grpc_addr"`
+	SimilarityThreshold float64 `yaml:"similarity_threshold"`
+	TTLSeconds          int64   `yaml:"ttl_seconds"`
 }
 
 // Load 读取 YAML 并替换 ${ENV} 变量

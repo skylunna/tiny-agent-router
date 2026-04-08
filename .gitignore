@@ -1,15 +1,18 @@
+# ========== Go ==========
 # Binaries
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+bin/
 
 # Test binary
 *.test
 
-# Output of the go coverage tool
+# Coverage
 *.out
+coverage.out
 
 # Dependency directories
 vendor/
@@ -21,9 +24,24 @@ vendor/
 
 # Env & Config
 .env
-*.env.local
-*.env.production
 configs/config.yaml
 
-# Build artifacts
-bin/
+# ========== Rust (cache-service/) ==========
+# Build output
+cache-service/target/
+*.rs.bk
+
+# Cargo.lock at root (if you have workspace, keep it; else ignore)
+# Cargo.lock  # ← 如果在 cache-service/ 内，则不在此处忽略
+
+# ========== Common ==========
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml

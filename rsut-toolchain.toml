@@ -1,0 +1,4 @@
+[toolchain]
+channel = "1.78.0"  # 稳定版，兼容 tonic 0.11
+components = ["rustfmt", "clippy", "protobuf"]
+targets = ["x86_64-unknown-linux-musl"]  # 为 Docker 多阶段构建准备

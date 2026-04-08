@@ -10,12 +10,13 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/skylunna/tiny-agent-router/internal/cache"
 	"github.com/skylunna/tiny-agent-router/internal/metrics"
 	"github.com/skylunna/tiny-agent-router/internal/router"
 )
 
 // NewHandler 创建代理处理器（修复版：可编译 + 非流式指标上报）
-func NewHandler(r *router.Router, costTracker *metrics.CostTracker) http.Handler {
+func NewHandler(r *router.Router, costTracker *metrics.CostTracker, cacheClient *cache.Client) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
