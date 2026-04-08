@@ -18,11 +18,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
+          cache: true
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
+          version: v1.64.8
           args: --timeout=5m
 
   test:
@@ -33,9 +33,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
+          cache: true
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
 
   build:
     name: Cross-Compile Build
@@ -46,13 +51,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
+          cache: true
       - name: Build binaries
         run: |
           GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-linux-amd64 ./cmd/router
           GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-darwin-amd64 ./cmd/router
           GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-windows-amd64.exe ./cmd/router
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -75,7 +79,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v6
         with:
           context: .
