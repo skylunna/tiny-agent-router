@@ -31,23 +31,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      # 👇 修复 protoc 缺失
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUST_VERSION }}
           components: clippy, rustfmt
           targets: x86_64-unknown-linux-musl
-      
+
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: cache-service
           cache-on-failure: true
-      
+
       - name: Run rustfmt
         working-directory: cache-service
         run: cargo fmt -- --check
-      
+
       - name: Run clippy
         working-directory: cache-service
         run: cargo clippy -- -D warnings
@@ -55,7 +59,7 @@ jobs:
       - name: Build cache-service
         working-directory: cache-service
         run: cargo build --release --target x86_64-unknown-linux-musl
-      
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +111,11 @@ jobs:
     needs: [rust-check]
     steps:
       - uses: actions/checkout@v4
+
+      # 👇 这里也必须加
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_VERSION }}
