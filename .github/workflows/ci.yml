@@ -34,8 +34,8 @@ jobs:
       
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.93.0"
-          components: clippy, rustfmt, rust-src, llvm-tools
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy, rustfmt
           targets: x86_64-unknown-linux-musl
       
       - name: Cache Rust dependencies
@@ -43,22 +43,18 @@ jobs:
         with:
           workspaces: cache-service
           cache-on-failure: true
-          shared-key: "nightly-1.93"
-      
-      - name: Configure rustflags for nightly
-        run: echo "RUSTFLAGS=-A unexpected_cfgs" >> $GITHUB_ENV
       
       - name: Run rustfmt
         working-directory: cache-service
-        run: cargo +nightly fmt -- --check
+        run: cargo fmt -- --check
       
       - name: Run clippy
         working-directory: cache-service
-        run: cargo +nightly clippy -- -D warnings
+        run: cargo clippy -- -D warnings
 
       - name: Build cache-service
         working-directory: cache-service
-        run: cargo +nightly build --release --target x86_64-unknown-linux-musl
+        run: cargo build --release --target x86_64-unknown-linux-musl
       
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -98,7 +94,7 @@ jobs:
         run: |
           GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-linux-amd64 ./cmd/router
           GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-darwin-amd64 ./cmd/router
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-windows-amd64.exe ./cmd/router
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/tiny-agent-router-windows-am64.exe ./cmd/router
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -106,20 +102,20 @@ jobs:
           path: bin/
 
   rust-build:
-    name: Rust Cache-Service Build
+    name: Rust Cache-Service Release Build
     runs-on: ubuntu-latest
     needs: [rust-check]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.85.0
+          toolchain: ${{ env.RUST_VERSION }}
           targets: x86_64-unknown-linux-musl
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: cache-service
-      - name: Build release binary (Linux musl for static linking)
+      - name: Build release binary (Linux musl)
         working-directory: cache-service
         run: cargo build --release --target x86_64-unknown-linux-musl
       - name: Upload Rust artifact
