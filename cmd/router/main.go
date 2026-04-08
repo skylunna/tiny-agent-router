@@ -36,7 +36,7 @@ func main() {
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		slog.Error("Failed to load config", "path", cfgPath, "error", err)
-		os.Exit(1)
+		return
 	}
 	slog.Info("Config loaded", "upstreams", len(cfg.Upstreams))
 
@@ -104,8 +104,7 @@ func main() {
 	go func() {
 		slog.Info("Server listening", "addr", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Server failed", "error", err)
-			os.Exit(1)
+			slog.Error("Server failed to start", "error", err)
 		}
 	}()
 
@@ -120,10 +119,8 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Forced shutdown", "error", err)
-		cancel() // 显示释放资源
-		os.Exit(1)
+		return
 	}
 
-	cancel()
 	slog.Info("✅ Server stopped gracefully")
 }
