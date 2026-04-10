@@ -1,2 +1,2 @@
 unstable_features = true
-ignore = ["src/proto/cache.rs"]
+ignore = ["cache-service/src/proto/"]

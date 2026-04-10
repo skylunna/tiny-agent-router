@@ -63,7 +63,7 @@ jobs:
 
       - name: Run rustfmt
         working-directory: cache-service
-        run: cargo fmt -- --check
+        run: cargo +nightly fmt -- --check
 
       - name: Run clippy
         working-directory: cache-service
