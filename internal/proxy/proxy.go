@@ -77,7 +77,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Cache", "HIT")
 			w.Header().Set("X-Cache-Similarity", fmt.Sprintf("%.4f", *resp.Similarity))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(*resp.ResponseBody))
+			_, _ = w.Write([]byte(*resp.ResponseBody))
 
 			// 指标上报
 			metrics.Record("cache", originalModel, float64(time.Since(start).Milliseconds()), 0, 0, 0, false)
@@ -109,10 +109,8 @@ func (p *Proxy) handleNonStreaming(w http.ResponseWriter, r *http.Request, reqBo
 		}
 
 		// 模型映射
-		targetModel := originalModel
 		if upstream.DefaultModel != "" {
-			targetModel = upstream.DefaultModel
-			reqBody = rewriteModelInBody(reqBody, targetModel)
+			reqBody = rewriteModelInBody(reqBody, upstream.DefaultModel)
 		}
 
 		// 构造请求
@@ -151,7 +149,7 @@ func (p *Proxy) handleNonStreaming(w http.ResponseWriter, r *http.Request, reqBo
 			w.Header()[k] = v
 		}
 		w.WriteHeader(resp.StatusCode)
-		w.Write(respBody)
+		_, _ = w.Write(respBody)
 
 		if p.shouldRetry(upstream, resp.StatusCode) {
 			lastErr = fmt.Errorf("status %d", resp.StatusCode)
@@ -204,10 +202,8 @@ func (p *Proxy) handleStreaming(w http.ResponseWriter, r *http.Request, reqBody 
 	}
 
 	// 模型映射
-	targetModel := originalModel
 	if upstream.DefaultModel != "" {
-		targetModel = upstream.DefaultModel
-		reqBody = rewriteModelInBody(reqBody, targetModel)
+		reqBody = rewriteModelInBody(reqBody, upstream.DefaultModel)
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, upstream.BaseURL+r.URL.Path, bytes.NewReader(reqBody))

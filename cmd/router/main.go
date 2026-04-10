@@ -64,7 +64,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 	if metricsHandler != nil {
 		mux.Handle(cfg.Metrics.PrometheusPath, metricsHandler)
@@ -106,7 +106,7 @@ func main() {
 		if cacheClient != nil {
 			cacheClient.Close()
 		}
-		server.Shutdown(ctx)
+		_ = server.Shutdown(ctx)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
