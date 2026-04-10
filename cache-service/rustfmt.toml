@@ -1,0 +1,2 @@
+# rustfmt.toml
+ignore = ["cache-service/src/proto/cache.rs"]
