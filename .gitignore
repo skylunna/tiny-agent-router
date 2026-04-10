@@ -32,7 +32,7 @@ cache-service/target/
 *.rs.bk
 # 自动生成的 proto 代码（编译时由 build.rs 产出）
 src/proto/cache.rs
-cache-service/src/proto/cache.rs
+# cache-service/src/proto/cache.rs
 
 # 本地缓存文件
 cache.db

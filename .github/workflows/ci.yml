@@ -63,7 +63,7 @@ jobs:
 
       - name: Run rustfmt
         working-directory: cache-service
-        run: find . -name "*.rs" ! -path "./cache-service/src/proto/*" -exec rustfmt --check {} +
+        run: cargo fmt -- --check
 
       - name: Run clippy
         working-directory: cache-service
