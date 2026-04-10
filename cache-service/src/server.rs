@@ -137,8 +137,8 @@ impl SemanticCache for CacheService {
             request_hash: hash,
             embedding,
             response_body,
-            input_tokens: input_tokens as i32,
-            output_tokens: output_tokens as i32,
+            input_tokens,
+            output_tokens,
             created_at,
             model: req.model,
         };
