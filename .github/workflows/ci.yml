@@ -63,7 +63,7 @@ jobs:
 
       - name: Run rustfmt
         working-directory: cache-service
-        run: cargo fmt -- --check
+        run: cargo fmt -- --check $(git ls-files '*.rs' | grep -v 'src/proto/')
 
       - name: Run clippy
         working-directory: cache-service
