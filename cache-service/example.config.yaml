@@ -1,0 +1,15 @@
+server:
+  addr: "[::1]:50051"
+
+embedding:
+  provider: "ollama"
+  model: "nomic-embed-text"
+  ollama_url: "http://localhost:11434"
+  dimensions: 768
+
+storage:
+  db_path: "cache.db"
+  ttl_seconds: 86400
+
+similarity:
+  threshold: 0.40

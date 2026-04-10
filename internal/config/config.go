@@ -18,6 +18,7 @@ type Config struct {
 	Pricing       map[string]Pricing  `yaml:"pricing"`       // 全局 pricing，按 upstream name 映射
 	Observability ObservabilityConfig `yaml:"observability"` // 改为 Observability
 	Cache         CacheConfig         `yaml:"cache"`
+	Metrics       MetricsConfig       `yaml:"metrics"`
 }
 
 type Upstream struct {
@@ -53,6 +54,11 @@ type CacheConfig struct {
 	GrpcAddr            string  `yaml:"grpc_addr"`
 	SimilarityThreshold float64 `yaml:"similarity_threshold"`
 	TTLSeconds          int64   `yaml:"ttl_seconds"`
+}
+
+type MetricsConfig struct {
+	EnablePrometheus bool   `yaml:"enable_prometheus"`
+	PrometheusPath   string `yaml:"prometheus_path"`
 }
 
 // Load 读取 YAML 并替换 ${ENV} 变量
@@ -92,6 +98,13 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Observability.ServiceName == "" {
 		cfg.Observability.ServiceName = "tiny-agent-router"
+	}
+	if cfg.Metrics.PrometheusPath == "" {
+		cfg.Metrics.PrometheusPath = "/metrics"
+	}
+	// 默认开启 Prometheus（生产建议显式配置）
+	if !cfg.Metrics.EnablePrometheus && cfg.Metrics.PrometheusPath != "" {
+		cfg.Metrics.EnablePrometheus = true
 	}
 
 	return &cfg, nil

@@ -25,11 +25,15 @@ const (
 // 缓存请求：用 embedding 向量 + 元数据作为键
 type CacheRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	RequestId        string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`                        // 唯一请求 ID（用于追踪）
-	Embedding        []float32              `protobuf:"fixed32,2,rep,packed,name=embedding,proto3" json:"embedding,omitempty"`                                // 请求的语义向量（768/1024 维）
-	Model            string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`                                                 // 目标模型名（用于隔离缓存）
-	SystemPromptHash string                 `protobuf:"bytes,4,opt,name=system_prompt_hash,json=systemPromptHash,proto3" json:"system_prompt_hash,omitempty"` // 系统提示哈希（避免提示变更导致缓存污染）
-	TtlSeconds       int64                  `protobuf:"varint,5,opt,name=ttl_seconds,json=ttlSeconds,proto3" json:"ttl_seconds,omitempty"`                    // 缓存有效期（秒），0 表示默认
+	RequestId        string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	PromptText       string                 `protobuf:"bytes,9,opt,name=prompt_text,json=promptText,proto3" json:"prompt_text,omitempty"`
+	Embedding        []float32              `protobuf:"fixed32,2,rep,packed,name=embedding,proto3" json:"embedding,omitempty"` // 请求的语义向量（768/1024 维）
+	Model            string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	SystemPromptHash string                 `protobuf:"bytes,4,opt,name=system_prompt_hash,json=systemPromptHash,proto3" json:"system_prompt_hash,omitempty"`
+	TtlSeconds       int64                  `protobuf:"varint,5,opt,name=ttl_seconds,json=ttlSeconds,proto3" json:"ttl_seconds,omitempty"`             // embedding 由 Rust 侧内部生成，不通过 gRPC 传输
+	ResponseBody     *string                `protobuf:"bytes,6,opt,name=response_body,json=responseBody,proto3,oneof" json:"response_body,omitempty"`  // 缓存的完整响应
+	InputTokens      *int32                 `protobuf:"varint,7,opt,name=input_tokens,json=inputTokens,proto3,oneof" json:"input_tokens,omitempty"`    // 输入 token 数（用于成本统计）
+	OutputTokens     *int32                 `protobuf:"varint,8,opt,name=output_tokens,json=outputTokens,proto3,oneof" json:"output_tokens,omitempty"` // 输出 token 数
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -71,6 +75,13 @@ func (x *CacheRequest) GetRequestId() string {
 	return ""
 }
 
+func (x *CacheRequest) GetPromptText() string {
+	if x != nil {
+		return x.PromptText
+	}
+	return ""
+}
+
 func (x *CacheRequest) GetEmbedding() []float32 {
 	if x != nil {
 		return x.Embedding
@@ -95,6 +106,27 @@ func (x *CacheRequest) GetSystemPromptHash() string {
 func (x *CacheRequest) GetTtlSeconds() int64 {
 	if x != nil {
 		return x.TtlSeconds
+	}
+	return 0
+}
+
+func (x *CacheRequest) GetResponseBody() string {
+	if x != nil && x.ResponseBody != nil {
+		return *x.ResponseBody
+	}
+	return ""
+}
+
+func (x *CacheRequest) GetInputTokens() int32 {
+	if x != nil && x.InputTokens != nil {
+		return *x.InputTokens
+	}
+	return 0
+}
+
+func (x *CacheRequest) GetOutputTokens() int32 {
+	if x != nil && x.OutputTokens != nil {
+		return *x.OutputTokens
 	}
 	return 0
 }
@@ -252,15 +284,23 @@ var File_proto_cache_proto protoreflect.FileDescriptor
 
 const file_proto_cache_proto_rawDesc = "" +
 	"\n" +
-	"\x11proto/cache.proto\x12\x05cache\"\xb0\x01\n" +
+	"\x11proto/cache.proto\x12\x05cache\"\x82\x03\n" +
 	"\fCacheRequest\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1c\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1f\n" +
+	"\vprompt_text\x18\t \x01(\tR\n" +
+	"promptText\x12\x1c\n" +
 	"\tembedding\x18\x02 \x03(\x02R\tembedding\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12,\n" +
 	"\x12system_prompt_hash\x18\x04 \x01(\tR\x10systemPromptHash\x12\x1f\n" +
 	"\vttl_seconds\x18\x05 \x01(\x03R\n" +
-	"ttlSeconds\"\xa9\x01\n" +
+	"ttlSeconds\x12(\n" +
+	"\rresponse_body\x18\x06 \x01(\tH\x00R\fresponseBody\x88\x01\x01\x12&\n" +
+	"\finput_tokens\x18\a \x01(\x05H\x01R\vinputTokens\x88\x01\x01\x12(\n" +
+	"\routput_tokens\x18\b \x01(\x05H\x02R\foutputTokens\x88\x01\x01B\x10\n" +
+	"\x0e_response_bodyB\x0f\n" +
+	"\r_input_tokensB\x10\n" +
+	"\x0e_output_tokens\"\xa9\x01\n" +
 	"\rCacheResponse\x12\x10\n" +
 	"\x03hit\x18\x01 \x01(\bR\x03hit\x12(\n" +
 	"\rresponse_body\x18\x02 \x01(\tH\x00R\fresponseBody\x88\x01\x01\x12#\n" +
@@ -316,6 +356,7 @@ func file_proto_cache_proto_init() {
 	if File_proto_cache_proto != nil {
 		return
 	}
+	file_proto_cache_proto_msgTypes[0].OneofWrappers = []any{}
 	file_proto_cache_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

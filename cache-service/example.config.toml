@@ -1,0 +1,22 @@
+[server]
+addr = "[::1]:50051"
+
+[embedding]
+# Ollama embedding 模型（需提前拉取：ollama pull nomic-embed-text）
+provider = "ollama"
+ollama_url = "http://localhost:11434"
+model = "nomic-embed-text"            # 或 "bge-m3"
+dimension = 768                       # 向量维度，需与模型匹配
+
+[storage]
+db_path = "./data/cache.db"
+max_entries = 10000         # 缓存上限，超过时 LRU 淘汰
+ttl_seconds = 86400         # 默认缓存有效期 24h
+
+[cache]
+similarity_threshold = 0.92 # 相似度阈值，≥ 此值才命中
+min_request_length = 10     # 请求太短不缓存（避免噪声）
+
+[metrics]
+enable_prometheus = true
+service_name = "semantic-cache"

@@ -4,11 +4,17 @@ option go_package = "github.com/skylunna/tiny-agent-router/internal/cache/proto"
 
 // 缓存请求：用 embedding 向量 + 元数据作为键
 message CacheRequest {
-  string request_id = 1;          // 唯一请求 ID（用于追踪）
-  repeated float embedding = 2;   // 请求的语义向量（768/1024 维）
-  string model = 3;               // 目标模型名（用于隔离缓存）
-  string system_prompt_hash = 4;  // 系统提示哈希（避免提示变更导致缓存污染）
-  int64 ttl_seconds = 5;          // 缓存有效期（秒），0 表示默认
+  string request_id = 1;
+  string prompt_text = 9;     
+  repeated float embedding = 2;   // 请求的语义向量（768/1024 维）       
+  string model = 3;
+  string system_prompt_hash = 4;
+  int64 ttl_seconds = 5;
+  // embedding 由 Rust 侧内部生成，不通过 gRPC 传输
+
+  optional string response_body = 6;     // 缓存的完整响应
+  optional int32 input_tokens = 7;       // 输入 token 数（用于成本统计）
+  optional int32 output_tokens = 8;      // 输出 token 数
 }
 
 // 缓存响应

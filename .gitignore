@@ -30,6 +30,14 @@ configs/config.yaml
 # Build output
 cache-service/target/
 *.rs.bk
+# 自动生成的 proto 代码（编译时由 build.rs 产出）
+src/proto/cache.rs
+
+# 本地缓存文件
+cache.db
+*.sqlite
+config.toml
+config.yaml
 
 # Cargo.lock at root (if you have workspace, keep it; else ignore)
 # Cargo.lock  # ← 如果在 cache-service/ 内，则不在此处忽略

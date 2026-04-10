@@ -1,52 +1,45 @@
-use tonic::{Request, Response, Status, transport::Server};
+mod embedding;
+mod proto;
+mod server;
+mod storage;
 
-pub mod proto {
-    tonic::include_proto!("cache");
-}
-
-use proto::semantic_cache_server::{SemanticCache, SemanticCacheServer};
-use proto::{CacheRequest, CacheResponse, Empty, HealthResponse};
-
-#[derive(Default)]
-struct CacheService;
-
-#[tonic::async_trait]
-impl SemanticCache for CacheService {
-    async fn get(&self, request: Request<CacheRequest>) -> Result<Response<CacheResponse>, Status> {
-        let req = request.into_inner();
-        tracing::info!("Cache GET request: id={}", req.request_id);
-
-        Ok(Response::new(CacheResponse {
-            hit: false,
-            response_body: None,
-            similarity: None,
-            reason: "not_implemented".to_string(),
-        }))
-    }
-
-    async fn put(&self, request: Request<CacheRequest>) -> Result<Response<Empty>, Status> {
-        let req = request.into_inner();
-        tracing::info!("Cache PUT request: id={}", req.request_id);
-
-        Ok(Response::new(Empty {}))
-    }
-
-    async fn health(&self, _request: Request<Empty>) -> Result<Response<HealthResponse>, Status> {
-        Ok(Response::new(HealthResponse { serving: true }))
-    }
-}
+use crate::embedding::EmbeddingService;
+use crate::proto::cache::semantic_cache_server::SemanticCacheServer;
+use crate::server::CacheService;
+use crate::storage::CacheDB;
+use std::sync::Arc;
+use tonic::transport::Server;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 初始化日志（显示 DEBUG 级别）
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .with_target(false)
+        .with_env_filter("info,cache_service=debug")
         .init();
 
-    let addr = "[::1]:50051".parse().unwrap();
-    let service = CacheService;
+    let db_path = "cache.db";
+    let ollama_url = "http://localhost:11434";
+    let embedding_model = "nomic-embed-text";
+    let similarity_threshold = 0.40; // 临时降低便于验证
 
-    tracing::info!("🦀 semantic-cache server listening on {}", addr);
+    info!("🔧 Initializing CacheDB at {}", db_path);
+    let db = Arc::new(CacheDB::new(db_path)?);
+
+    info!(
+        "🔧 Initializing EmbeddingService (model: {})",
+        embedding_model
+    );
+    let embedding = Arc::new(EmbeddingService::new(ollama_url, embedding_model, 30));
+
+    let service = CacheService {
+        db,
+        embedding,
+        similarity_threshold,
+    };
+
+    let addr = "[::1]:50051".parse().unwrap();
+    info!("🦀 semantic-cache server listening on {}", addr);
 
     Server::builder()
         .add_service(SemanticCacheServer::new(service))
