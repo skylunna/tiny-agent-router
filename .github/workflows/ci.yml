@@ -63,7 +63,12 @@ jobs:
 
       - name: Run rustfmt
         working-directory: cache-service
-        run: cargo fmt -- --check $(git ls-files '*.rs' | grep -v 'src/proto/')
+        run: |
+          find . -name "*.rs" \
+            -not -path "*/proto/*" \
+            -not -path "*/target/*" \
+            -not -path "*/.cargo/*" \
+            | xargs rustfmt --edition 2024 --check
 
       - name: Run clippy
         working-directory: cache-service
