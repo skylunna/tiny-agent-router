@@ -56,7 +56,7 @@ pub mod semantic_cache_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value,
+        clippy::let_unit_value
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with SemanticCacheServer.
@@ -100,10 +100,7 @@ pub mod semantic_cache_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -158,22 +155,16 @@ pub mod semantic_cache_server {
                 "/cache.SemanticCache/Get" => {
                     #[allow(non_camel_case_types)]
                     struct GetSvc<T: SemanticCache>(pub Arc<T>);
-                    impl<
-                        T: SemanticCache,
-                    > tonic::server::UnaryService<super::CacheRequest> for GetSvc<T> {
+                    impl<T: SemanticCache> tonic::server::UnaryService<super::CacheRequest> for GetSvc<T> {
                         type Response = super::CacheResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::CacheRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SemanticCache>::get(&inner, request).await
-                            };
+                            let fut =
+                                async move { <T as SemanticCache>::get(&inner, request).await };
                             Box::pin(fut)
                         }
                     }
@@ -202,22 +193,16 @@ pub mod semantic_cache_server {
                 "/cache.SemanticCache/Put" => {
                     #[allow(non_camel_case_types)]
                     struct PutSvc<T: SemanticCache>(pub Arc<T>);
-                    impl<
-                        T: SemanticCache,
-                    > tonic::server::UnaryService<super::CacheRequest> for PutSvc<T> {
+                    impl<T: SemanticCache> tonic::server::UnaryService<super::CacheRequest> for PutSvc<T> {
                         type Response = super::Empty;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::CacheRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SemanticCache>::put(&inner, request).await
-                            };
+                            let fut =
+                                async move { <T as SemanticCache>::put(&inner, request).await };
                             Box::pin(fut)
                         }
                     }
@@ -246,21 +231,13 @@ pub mod semantic_cache_server {
                 "/cache.SemanticCache/Health" => {
                     #[allow(non_camel_case_types)]
                     struct HealthSvc<T: SemanticCache>(pub Arc<T>);
-                    impl<T: SemanticCache> tonic::server::UnaryService<super::Empty>
-                    for HealthSvc<T> {
+                    impl<T: SemanticCache> tonic::server::UnaryService<super::Empty> for HealthSvc<T> {
                         type Response = super::HealthResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::Empty>,
-                        ) -> Self::Future {
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(&mut self, request: tonic::Request<super::Empty>) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as SemanticCache>::health(&inner, request).await
-                            };
+                            let fut =
+                                async move { <T as SemanticCache>::health(&inner, request).await };
                             Box::pin(fut)
                         }
                     }
@@ -286,23 +263,19 @@ pub mod semantic_cache_server {
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        let mut response = http::Response::new(empty_body());
-                        let headers = response.headers_mut();
-                        headers
-                            .insert(
-                                tonic::Status::GRPC_STATUS,
-                                (tonic::Code::Unimplemented as i32).into(),
-                            );
-                        headers
-                            .insert(
-                                http::header::CONTENT_TYPE,
-                                tonic::metadata::GRPC_CONTENT_TYPE,
-                            );
-                        Ok(response)
-                    })
-                }
+                _ => Box::pin(async move {
+                    let mut response = http::Response::new(empty_body());
+                    let headers = response.headers_mut();
+                    headers.insert(
+                        tonic::Status::GRPC_STATUS,
+                        (tonic::Code::Unimplemented as i32).into(),
+                    );
+                    headers.insert(
+                        http::header::CONTENT_TYPE,
+                        tonic::metadata::GRPC_CONTENT_TYPE,
+                    );
+                    Ok(response)
+                }),
             }
         }
     }
