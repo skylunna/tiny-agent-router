@@ -64,11 +64,11 @@ jobs:
       - name: Run rustfmt
         working-directory: cache-service
         run: |
-          find . -name "*.rs" \
-            -not -path "*/proto/*" \
-            -not -path "*/target/*" \
-            -not -path "*/.cargo/*" \
-            | xargs rustfmt --edition 2024 --check
+          rustup component add rustfmt
+          
+          git ls-files '*.rs' \
+            | grep -vE '^cache-service/src/proto/|^target/|^.*\.pb\.rs$' \
+            | xargs -r rustfmt --edition 2024 --check
 
       - name: Run clippy
         working-directory: cache-service
