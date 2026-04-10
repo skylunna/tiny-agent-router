@@ -2,7 +2,6 @@
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CacheEntry {
