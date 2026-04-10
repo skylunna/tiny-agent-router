@@ -63,12 +63,7 @@ jobs:
 
       - name: Run rustfmt
         working-directory: cache-service
-        run: |
-          rustup component add rustfmt
-          
-          git ls-files '*.rs' \
-            | grep -vE '^cache-service/src/proto/|^target/|^.*\.pb\.rs$' \
-            | xargs -r rustfmt --edition 2024 --check
+        run: find . -name "*.rs" ! -path "./cache-service/src/proto/*" -exec rustfmt --check {} +
 
       - name: Run clippy
         working-directory: cache-service
